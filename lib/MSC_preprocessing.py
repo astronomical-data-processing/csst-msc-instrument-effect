@@ -1,7 +1,10 @@
+from astropy.io.fits.hdu.hdulist import HDUList
+from astropy.io.fits.hdu.image import ImageHDU
 from lib.MSC_crmask import CRMask
 import numpy as np
 from astropy.io import fits
 from lib.MSC_crmask import CRMask
+import os
 
 
 class Pipeline:
@@ -15,11 +18,11 @@ class Pipeline:
         else:
             raise "no data"
         # RDNOISE
-        self.RDNOISE = kwarg["RDNOISE"] if 'RDNOISE' in kwarg else 'RDNOISE'
+        self.RDNOISE = kwarg["RDNOISE"] if "RDNOISE" in kwarg else "RDNOISE"
         # GAIN
-        self.GAIN = kwarg["GAIN"] if 'GAIN' in kwarg else 'GAIN'
+        self.GAIN = kwarg["GAIN"] if "GAIN" in kwarg else "GAIN"
         # EXPTIME
-        self.EXPTIME = kwarg["EXPTIME"] if 'EXPTIME' in kwarg else 'EXPTIME'
+        self.EXPTIME = kwarg["EXPTIME"] if "EXPTIME" in kwarg else "EXPTIME"
         # cray
         self.cray = self.fix_cray(kwarg["cray"]) if "cray" in kwarg else 0
         # bias
@@ -28,15 +31,7 @@ class Pipeline:
         self.dark = self.fix_dark(kwarg["dark"]) if "dark" in kwarg else 0
         # flat
         self.flat = self.fix_flat(kwarg["flat"]) if "flat" in kwarg else 1
-        # fix data
-        self.data = self.fix_data()
-        # self.data = (self.du - self.bias) / self.flat  # tmp
-        # mask
-        self.mask, self.data = self.fix_mask()
-        # weight
-        data = self.data.copy()
-        data[data < 0] = 0
-        self.weight = self.fix_weight(data)
+
 
     def fix_bias(
         self, paths,
@@ -127,6 +122,15 @@ class Pipeline:
         weight[self.mask > 0] = 0
         return weight
 
+    def run(self):
+        # fix data
+        self.data = self.fix_data()
+        # mask
+        self.mask, self.data = self.fix_mask()
+        # weight
+        data = self.data.copy()
+        data[data < 0] = 0
+        self.weight = self.fix_weight(data)
 
 if __name__ == "__main__":
     args = {
@@ -145,20 +149,42 @@ if __name__ == "__main__":
         "GAIN": "GAIN1",
     }
     pl = Pipeline(**args)
+    pl.run()
+    if not os.path.exists(".local"):
+        os.mkdir(".local")
     data = fits.HDUList(
         [
             fits.PrimaryHDU(header=pl.phu),
             fits.ImageHDU(pl.data.astype(np.float32), pl.hu),
         ]
     )
-    data.writeto("local/MSC_MS_210525121500_100000001_08_fix.fits")
-    bias = fits.HDUList([fits.PrimaryHDU(pl.bias.astype(np.int16))])
-    bias.writeto("local/MSC_CLB_210525120000_100000000_08_fix.fits")
+    filename = os.path.basename(args["data"]).replace("raw", "fix")
+    filename = os.path.join('.local', filename)
+    data.writeto(filename)
+    bias = fits.HDUList(
+        [
+            fits.PrimaryHDU(header=pl.phu),
+            fits.ImageHDU(data=pl.bias.astype(np.int16), header=pl.hu),
+        ]
+    )
+    filename = os.path.basename(args["bias"]).replace("raw", "fix")
+    filename = os.path.join('.local', filename)
+    bias.writeto(filename)
     dark = fits.HDUList([fits.PrimaryHDU(pl.dark.astype(np.int16))])
-    dark.writeto("local/MSC_CLD_210525121000_100000000_08_fix.fits")
+    filename = os.path.basename(args["dark"]).replace("raw", "fix")
+    filename = os.path.join('.local', filename)
+    dark.writeto(filename)
     flat = fits.HDUList([fits.PrimaryHDU(pl.flat.astype(np.float32))])
-    flat.writeto("local/MSC_CLF_210525120500_100000000_08_fix.fits")
-    mask = fits.HDUList([fits.PrimaryHDU(pl.mask.astype(np.uint16))])
-    mask.writeto("local/MSC_MS_210525121500_100000001_08_msk.fits")
-    weight = fits.HDUList([fits.PrimaryHDU(pl.weight.astype(np.float32))])
-    weight.writeto("local/MSC_MS_210525121500_100000001_08_wht.fits")
+    filename = os.path.basename(args["flat"]).replace("raw", "fix")
+    filename = os.path.join('.local', filename)
+    flat.writeto(filename)
+    flg = fits.HDUList([fits.PrimaryHDU(data=pl.mask.astype(np.uint16), header=pl.hu)])
+    filename = os.path.basename(args["data"]).replace("raw", "flg")
+    filename = os.path.join('.local', filename)
+    flg.writeto(filename)
+    weight = fits.HDUList(
+        [fits.PrimaryHDU(data=pl.weight.astype(np.float32), header=pl.hu)]
+    )
+    filename = os.path.basename(args["data"]).replace("raw", "wht")
+    filename = os.path.join('.local', filename)
+    weight.writeto(filename)

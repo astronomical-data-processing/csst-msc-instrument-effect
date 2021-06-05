@@ -1,6 +1,6 @@
 import unittest
 
-from lib.MSC_preprocessing import Pipeline
+from preprocessing.MSC_preprocessing import Pipeline
 import os
 
 

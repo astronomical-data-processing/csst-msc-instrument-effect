@@ -1,9 +1,6 @@
-from astropy.io.fits.hdu.hdulist import HDUList
-from astropy.io.fits.hdu.image import ImageHDU
-from lib.MSC_crmask import CRMask
+from preprocessing.MSC_crmask import CRMask
 import numpy as np
 from astropy.io import fits
-from lib.MSC_crmask import CRMask
 import os
 
 

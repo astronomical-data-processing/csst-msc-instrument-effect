@@ -276,8 +276,9 @@ class CRMask:
         
         #TODO
         #add history keywords here
+        mask = None
         if self.flag != None:
-            self.flag[1].data |= (mask<<4)
+            self.flag[1].data |= (masked<<4)
             self.flag[1].header.add_history('Use ccdproc.cosimicray_lacosmicfor cosmic ray detecting')
             value = 'CRMask start at {0}'.format(start_time)
             self.flag[1].header.add_history(value)
@@ -390,7 +391,7 @@ class CRMask:
         #TODO
         #add history keywords here
         if self.flag != None:
-            self.flag[1].data |= (mask<<4)
+            self.flag[1].data |= (masked<<4)
             self.flag[1].header.add_history('Use deepCR for cosmic ray detecting')
             value = 'CRMask start at {0}'.format(start_time)
             self.flag[1].header.add_history(value)

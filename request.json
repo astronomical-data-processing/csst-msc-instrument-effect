@@ -1,0 +1,11 @@
+
+{
+    "file_data_fullname": "/mnt/storage-data/xiezhou/TEST_20210602/MSC_MS_210525121500_100000001_08_raw.fits",
+    "file_bias_fullname_list": ["/mnt/storage-data/xiezhou/TEST_20210602/MSC_CLB_210525120000_100000000_08_raw.fits"],
+    "file_dark_fullname_list": ["/mnt/storage-data/xiezhou/TEST_20210602/MSC_CLD_210525121000_100000000_08_raw.fits"],
+    "file_flat_fullname_list": ["/mnt/storage-data/xiezhou/TEST_20210602/MSC_CLF_210525120500_100000000_08_raw.fits"],
+    "file_cray_fullname": "/mnt/storage-data/xiezhou/TEST_20210602/MSC_CRD_210525121000_100000000_08_raw.fits",
+    "fits_field_read_noise": "RDNOISE1",
+    "fits_field_gain": "GAIN1",
+    "fits_field_exposure_time": "EXPTIME"
+}

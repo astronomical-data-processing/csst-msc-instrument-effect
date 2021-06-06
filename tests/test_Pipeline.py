@@ -1,6 +1,6 @@
 import unittest
 
-from preprocessing.MSC_preprocessing import Pipeline
+from preprocessing.MSC_preprocessing import csst_msc_instrument_effect
 import os
 
 
@@ -21,7 +21,7 @@ class MSCPipelineTestCase(unittest.TestCase):
             "RDNOISE": "RDNOISE1",
             "GAIN": "GAIN1",
         }
-        self.api = Pipeline(**args)
+        self.api = csst_msc_instrument_effect(**args)
 
     def test_run(self):
         self.api.run()

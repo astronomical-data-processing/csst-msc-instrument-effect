@@ -4,7 +4,7 @@ from astropy.io import fits
 import os
 
 
-class Pipeline:
+class csst_msc_instrument_effect:
     def __init__(self, **kwarg) -> None:
         # data
         if "data" in kwarg:
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         "RDNOISE": "RDNOISE1",
         "GAIN": "GAIN1",
     }
-    pl = Pipeline(**args)
+    pl = csst_msc_instrument_effect(**args)
     pl.run()
     if not os.path.exists(".local"):
         os.mkdir(".local")

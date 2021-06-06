@@ -1,4 +1,4 @@
-# MSC_INS_EFFECT 仪器效应改正
+# csst_msc_instrument_effect 仪器效应改正
 
 用于改正CSST的0级数据中的仪器效应问题，如本底、暗流、平场，并标记出坏像元、热像元、暖像元、溢出像元、宇宙线。也会运算出权重weight。
 
@@ -16,9 +16,9 @@ args = {
     "GAIN": "GAIN",  # 头文件中增益字段名
     "EXPTIME": "EXPTIME",  # 头文件中曝光时间字段名
 }
-from preprocessing.MSC_preprocessing import Pipeline  # 载入包
+from preprocessing.MSC_preprocessing import csst_msc_instrument_effect  # 载入包
 
-pl = Pipeline(**args)  # 创建管线对象
+pl = csst_msc_instrument_effect(**args)  # 创建管线对象
 pl.run()  # 运行管线
 pl.data  # 科学图像改正后的结果
 pl.mask  # 像元标记结果

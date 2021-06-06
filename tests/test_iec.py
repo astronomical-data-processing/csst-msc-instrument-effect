@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from csst_msc_instrument_effect.msc_preprocessing import InstrumentEffectCorrection
+from csst_msc_instrument_effect.msc_iec import InstrumentEffectCorrection
 
 
 class MSCPipelineTestCase(unittest.TestCase):

@@ -89,12 +89,13 @@ class InstrumentEffectCorrection:
                     du = du - self.bias
                     du = du / hu[self.EXPTIME] * self.primary_header[self.EXPTIME]
                     du = du - self.dark
+                    du = du / self.primary_header[self.EXPTIME]
                     du = du / np.median(du)
                     flat.append(du)
             self.flat = np.median(flat, axis=0)
 
     def fix_data(self,):
-        self.data_fix0 = (self.data_raw - self.bias - self.dark) / self.flat
+        self.data_fix0 = (self.data_raw - self.bias - self.dark) / (self.flat * self.primary_header[self.EXPTIME])
 
     def set_flag(self,):
         flag = np.zeros_like(self.data_raw, dtype=np.uint16)
@@ -129,8 +130,10 @@ class InstrumentEffectCorrection:
         self.data_fix1 = data_fits[1].data
 
     def set_weight(self):
+        data = self.data_fix0.copy()
+        data[self.data_fix0 < 0] = 0
         weight = 1 / (
-            self.image_header[self.GAIN] * self.data_fix0
+            self.image_header[self.GAIN] * data
             + self.image_header[self.RDNOISE] ** 2
         )
         weight[self.flag > 0] = 0
@@ -144,7 +147,7 @@ class InstrumentEffectCorrection:
             [
                 fits.PrimaryHDU(header=self.primary_header),
                 fits.ImageHDU(
-                    data=self.data_fix1.astype(np.float32), header=self.image_header
+                    data=self.data_fix0.astype(np.float32), header=self.image_header
                 ),
             ]
         )
@@ -176,21 +179,27 @@ class InstrumentEffectCorrection:
             bias_filename = self.json["file_bias_fullname_list"][0]
             bias_basename = os.path.basename(bias_filename).replace("raw", "fix")
             bias_output = os.path.join(self.output, bias_basename)
-            bias_fits = fits.HDUList([fits.PrimaryHDU(data=self.bias)])
+            bias_fits = fits.HDUList(
+                [fits.PrimaryHDU(data=self.bias.astype(np.float32))]
+            )
             bias_fits.writeto(bias_output)
 
         if "file_dark_fullname_list" in self.json:
             dark_filename = self.json["file_dark_fullname_list"][0]
             dark_basename = os.path.basename(dark_filename).replace("raw", "fix")
             dark_output = os.path.join(self.output, dark_basename)
-            dark_fits = fits.HDUList([fits.PrimaryHDU(data=self.dark)])
+            dark_fits = fits.HDUList(
+                [fits.PrimaryHDU(data=self.dark.astype(np.float32))]
+            )
             dark_fits.writeto(dark_output)
 
         if "file_flat_fullname_list" in self.json:
             flat_filename = self.json["file_flat_fullname_list"][0]
             flat_basename = os.path.basename(flat_filename).replace("raw", "fix")
             flat_output = os.path.join(self.output, flat_basename)
-            flat_fits = fits.HDUList([fits.PrimaryHDU(data=self.flat)])
+            flat_fits = fits.HDUList(
+                [fits.PrimaryHDU(data=self.flat.astype(np.float32))]
+            )
             flat_fits.writeto(flat_output)
 
 

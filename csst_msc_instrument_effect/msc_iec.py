@@ -1,11 +1,13 @@
 import os
 import json
 import argparse
+from astropy.io.fits import header
 
 import numpy as np
 from astropy.io import fits
 
 from csst_msc_instrument_effect.msc_crmask import CRMask
+from lacosmic import lacosmic
 
 
 class InstrumentEffectCorrection:
@@ -89,13 +91,12 @@ class InstrumentEffectCorrection:
                     du = du - self.bias
                     du = du / hu[self.EXPTIME] * self.primary_header[self.EXPTIME]
                     du = du - self.dark
-                    du = du / self.primary_header[self.EXPTIME]
                     du = du / np.median(du)
                     flat.append(du)
             self.flat = np.median(flat, axis=0)
 
     def fix_data(self,):
-        self.data_fix0 = (self.data_raw - self.bias - self.dark) / (self.flat * self.primary_header[self.EXPTIME])
+        self.data_fix0 = (self.data_raw - self.bias - self.dark) / self.flat
 
     def set_flag(self,):
         flag = np.zeros_like(self.data_raw, dtype=np.uint16)
@@ -127,33 +128,34 @@ class InstrumentEffectCorrection:
         # 10000000:   散射光污染的像元(包括dragon breath)
         pass
         self.flag = flag
-        self.data_fix1 = data_fits[1].data
+        # self.data_fix1 = data_fits[1].data
 
     def set_weight(self):
         data = self.data_fix0.copy()
         data[self.data_fix0 < 0] = 0
         weight = 1 / (
-            self.image_header[self.GAIN] * data
-            + self.image_header[self.RDNOISE] ** 2
+            self.image_header[self.GAIN] * data + self.image_header[self.RDNOISE] ** 2
         )
         weight[self.flag > 0] = 0
         self.weight = weight
 
     def save(self):
         data_filename = self.json["file_data_fullname"]
-        data_basename = os.path.basename(data_filename).replace("raw", "fix")
+        data_basename = os.path.basename(data_filename).replace("raw", "img")
         data_output = os.path.join(self.output, data_basename)
         data_fits = fits.HDUList(
             [
                 fits.PrimaryHDU(header=self.primary_header),
                 fits.ImageHDU(
-                    data=self.data_fix0.astype(np.float32), header=self.image_header
+                    data=self.data_fix0.astype(np.float32)
+                    / self.primary_header[self.EXPTIME],
+                    header=self.image_header,
                 ),
             ]
         )
         data_fits.writeto(data_output)
 
-        flag_output = data_output.replace("fix", "flg")
+        flag_output = data_output.replace("img", "flg")
         flag_fits = fits.HDUList(
             [
                 fits.PrimaryHDU(header=self.primary_header),
@@ -164,7 +166,7 @@ class InstrumentEffectCorrection:
         )
         flag_fits.writeto(flag_output)
 
-        weight_output = data_output.replace("fix", "wht")
+        weight_output = data_output.replace("img", "wht")
         weight_fits = fits.HDUList(
             [
                 fits.PrimaryHDU(header=self.primary_header),
@@ -202,6 +204,19 @@ class InstrumentEffectCorrection:
             )
             flat_fits.writeto(flat_output)
 
+        header_name = data_basename.replace('.fits', '.head')
+        header_output = os.path.join(self.output, header_name)
+        hu = self.image_header
+        hu['INSTRU_S'] = (0, 'instrument effect status')
+        hu['INST_TOL'] = (1234, 'instrument effect operation time')
+        hu['INSTRU_V'] = ('0.1', 'instrument effect version')
+        hu['INSTRU_P'] = ('test.conf', 'instrument effect config file')
+        header_fits = fits.HDUList(
+            [
+                fits.PrimaryHDU(header=hu)
+            ]
+        )
+        header_fits.writeto(header_output)
 
 def main():
     args = argparse.ArgumentParser()

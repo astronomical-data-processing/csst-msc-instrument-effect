@@ -7,25 +7,28 @@ import numpy as np
 from astropy.io import fits
 
 from csst_msc_instrument_effect.msc_crmask import CRMask
-from lacosmic import lacosmic
+from csst_dfs_api.facility.level0 import Level0DataApi
 
 
 class InstrumentEffectCorrection:
-    def __init__(self, json_file, output_path) -> None:
-        with open(json_file) as f:
-            self.json = json.load(f)
-        if "file_data_fullname" not in self.json:
-            raise "no file_data_fullname"
-        self.output = output_path
+    def __init__(self, id) -> None:
+        db_api = Level0DataApi()
+        info = db_api.get(fits_id=id)
+        self.json = {'file_data_fullname': info['data'].file_path}
+        self.json['file_bias_fullname_list'] = ["/home/csstpipeline/data/bkg/MSC_CLB_210525120000_100000000_08_raw.fits"]
+        self.json['file_dark_fullname_list'] = ["/home/csstpipeline/data/bkg/MSC_CLD_210525121000_100000000_08_raw.fits"]
+        self.json['file_flat_fullname_list'] = ["/home/csstpipeline/data/bkg/MSC_CLF_210525120500_100000000_08_raw.fits"]
+        self.json['file_cray_fullname'] = "/home/csstpipeline/data/bkg/MSC_CRD_210525121000_100000000_08_raw.fits"
+        self.output = '/home/csstpipeline/data/L05_test'
         # RDNOISE
         self.RDNOISE = (
             self.json["fits_field_read_noise"]
             if "fits_field_read_noise" in self.json
-            else "RDNOISE"
+            else "RDNOISE1"
         )
         # GAIN
         self.GAIN = (
-            self.json["fits_field_gain"] if "fits_field_gain" in self.json else "GAIN"
+            self.json["fits_field_gain"] if "fits_field_gain" in self.json else "GAIN1"
         )
         # EXPTIME
         self.EXPTIME = (
@@ -117,6 +120,9 @@ class InstrumentEffectCorrection:
         # 00001000:   饱和溢出像元  饱和像元及流量溢出污染的像元.
         flg = self.data_raw == 65535
         flag = flag | (flg * 8)
+        del dark
+        del flg
+        del med
         # 00010000:   宇宙线像元    宇宙线污染的像元
         crobj = CRMask(self.data_fix0)
         flag_fits, data_fits = crobj.cr_mask()
@@ -177,33 +183,6 @@ class InstrumentEffectCorrection:
         )
         weight_fits.writeto(weight_output)
 
-        if "file_bias_fullname_list" in self.json:
-            bias_filename = self.json["file_bias_fullname_list"][0]
-            bias_basename = os.path.basename(bias_filename).replace("raw", "fix")
-            bias_output = os.path.join(self.output, bias_basename)
-            bias_fits = fits.HDUList(
-                [fits.PrimaryHDU(data=self.bias.astype(np.float32))]
-            )
-            bias_fits.writeto(bias_output)
-
-        if "file_dark_fullname_list" in self.json:
-            dark_filename = self.json["file_dark_fullname_list"][0]
-            dark_basename = os.path.basename(dark_filename).replace("raw", "fix")
-            dark_output = os.path.join(self.output, dark_basename)
-            dark_fits = fits.HDUList(
-                [fits.PrimaryHDU(data=self.dark.astype(np.float32))]
-            )
-            dark_fits.writeto(dark_output)
-
-        if "file_flat_fullname_list" in self.json:
-            flat_filename = self.json["file_flat_fullname_list"][0]
-            flat_basename = os.path.basename(flat_filename).replace("raw", "fix")
-            flat_output = os.path.join(self.output, flat_basename)
-            flat_fits = fits.HDUList(
-                [fits.PrimaryHDU(data=self.flat.astype(np.float32))]
-            )
-            flat_fits.writeto(flat_output)
-
         header_name = data_basename.replace('.fits', '.head')
         header_output = os.path.join(self.output, header_name)
         hu = self.image_header
@@ -220,10 +199,9 @@ class InstrumentEffectCorrection:
 
 def main():
     args = argparse.ArgumentParser()
-    args.add_argument("-j", "--json", required=True)
-    args.add_argument("-o", "--output", required=True)
+    args.add_argument('-i', '--id', required=True)
     args = args.parse_args()
-    obj = InstrumentEffectCorrection(json_file=args.json, output_path=args.output)
+    obj = InstrumentEffectCorrection(id=args.id)
     obj.set_data()
     obj.set_cray()
     obj.set_bias()

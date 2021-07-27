@@ -1,5 +1,14 @@
-# coding: utf-8
-import os
 from setuptools import setup
 
-setup(use_scm_version={'write_to': os.path.join('csst_msc_instrument_effect', '_version.py')})
+
+setup(
+    name='csst_msc_instrument_effect',
+    author='xiezhou',
+    version='0.1',
+    packages=['csst_msc_instrument_effect'],
+    entry_points={
+        'console_scripts': [
+            'csst_msc_instrument_effect=csst_msc_instrument_effect.msc_iec:main'
+        ]
+    }
+)

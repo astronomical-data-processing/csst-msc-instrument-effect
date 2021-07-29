@@ -1,102 +1,84 @@
 import os
-import json
-import argparse
+from typing import List
 from astropy.io.fits import header
+from datetime import datetime
 
 import numpy as np
 from astropy.io import fits
 
 from csst_msc_instrument_effect.msc_crmask import CRMask
 from csst_dfs_api.facility.level0 import Level0DataApi
+from csst_dfs_api.facility.level0prc import Level0PrcApi
 
 
 class InstrumentEffectCorrection:
-    def __init__(self, id) -> None:
-        db_api = Level0DataApi()
-        info = db_api.get(fits_id=id)
-        self.json = {'file_data_fullname': info['data'].file_path}
-        self.json['file_bias_fullname_list'] = ["/home/csstpipeline/data/bkg/MSC_CLB_210525120000_100000000_08_raw.fits"]
-        self.json['file_dark_fullname_list'] = ["/home/csstpipeline/data/bkg/MSC_CLD_210525121000_100000000_08_raw.fits"]
-        self.json['file_flat_fullname_list'] = ["/home/csstpipeline/data/bkg/MSC_CLF_210525120500_100000000_08_raw.fits"]
-        self.json['file_cray_fullname'] = "/home/csstpipeline/data/bkg/MSC_CRD_210525121000_100000000_08_raw.fits"
-        self.output = '/home/csstpipeline/data/L05_test'
+    def __init__(self, data_path, bias_path, dark_path, flat_path, output_path, cray_path) -> None:
+        self.data_path = data_path
+        self.bias_path = bias_path
+        self.dark_path = dark_path
+        self.flat_path = flat_path
+        self.cray_path = "/home/csstpipeline/data/bkg/MSC_CRD_210525121000_100000000_08_raw.fits"
+        self.output = output_path
         # RDNOISE
-        self.RDNOISE = (
-            self.json["fits_field_read_noise"]
-            if "fits_field_read_noise" in self.json
-            else "RDNOISE1"
-        )
+        self.RDNOISE = "RDNOISE1"
         # GAIN
-        self.GAIN = (
-            self.json["fits_field_gain"] if "fits_field_gain" in self.json else "GAIN1"
-        )
+        self.GAIN = "GAIN1"
         # EXPTIME
-        self.EXPTIME = (
-            self.json["fits_field_exposure_time"]
-            if "fits_field_exposure_time" in self.json
-            else "EXPTIME"
-        )
+        self.EXPTIME = "EXPTIME"
 
     def set_data(self):
         # data
-        with fits.open(self.json["file_data_fullname"]) as hdul:
+        with fits.open(self.data_path) as hdul:
             self.primary_header = hdul[0].header
             self.data_raw = hdul[1].data.astype(int)
             self.image_header = hdul[1].header
 
-    def set_cray(self):
-        # cray
-        if "file_cray_fullname" not in self.json:
-            self.cray = np.zeros_like(self.data_raw)
-        else:
-            self.cray = fits.getdata(self.json["file_cray_fullname"]).astype(int)
-
     def set_bias(self):
         # bias
-        if "file_bias_fullname_list" not in self.json:
-            self.bias = np.zeros_like(self.data_raw)
-        else:
-            bias = []
-            for path in self.json["file_bias_fullname_list"]:
-                du = fits.getdata(path)
-                du = du.astype(int)
-                bias.append(du)
-            self.bias = np.median(bias, axis=0)
+        bias = []
+        paths = self.bias_path if isinstance(self.bias_path, list) else [self.bias_path]
+        for path in paths:
+            du = fits.getdata(path)
+            du = du.astype(int)
+            bias.append(du)
+        self.bias = np.median(bias, axis=0)
 
     def set_dark(self):
         # dark
-        if "file_dark_fullname_list" not in self.json:
-            self.dark = np.zeros_like(self.data_raw)
-        else:
-            dark = []
-            for path in self.json["file_dark_fullname_list"]:
-                with fits.open(path) as hdul:
-                    du = hdul[1].data
-                    hu = hdul[0].header
-                    du = du.astype(int)
-                    du = du - self.bias
-                    du = du - self.cray / self.image_header[self.GAIN]
-                    du = du / hu[self.EXPTIME] * self.primary_header[self.EXPTIME]
-                    dark.append(du)
-            self.dark = np.median(dark, axis=0)
+        dark = []
+        paths = self.dark_path if isinstance(self.dark_path, list) else [self.dark_path]
+        for path in paths:
+            with fits.open(path) as hdul:
+                du = hdul[1].data
+                hu = hdul[0].header
+                du = du.astype(int)
+                du = du - self.bias
+                du = du - self.cray / self.image_header[self.GAIN]
+                du = du / hu[self.EXPTIME] * \
+                    self.primary_header[self.EXPTIME]
+                dark.append(du)
+        self.dark = np.median(dark, axis=0)
 
     def set_flat(self):
         # flat
-        if "file_flat_fullname_list" not in self.json:
-            self.flat = np.ones_like(self.data_raw)
-        else:
-            flat = []
-            for path in self.json["file_flat_fullname_list"]:
-                with fits.open(path) as hdul:
-                    du = hdul[1].data
-                    hu = hdul[0].header
-                    du = du.astype(int)
-                    du = du - self.bias
-                    du = du / hu[self.EXPTIME] * self.primary_header[self.EXPTIME]
-                    du = du - self.dark
-                    du = du / np.median(du)
-                    flat.append(du)
-            self.flat = np.median(flat, axis=0)
+        flat = []
+        paths = self.flat_path if isinstance(self.flat_path, list) else [self.flat_path]
+        for path in paths:
+            with fits.open(path) as hdul:
+                du = hdul[1].data
+                hu = hdul[0].header
+                du = du.astype(int)
+                du = du - self.bias
+                du = du / hu[self.EXPTIME] * \
+                    self.primary_header[self.EXPTIME]
+                du = du - self.dark
+                du = du / np.median(du)
+                flat.append(du)
+        self.flat = np.median(flat, axis=0)
+
+    def set_cray(self):
+        # cray
+        self.cray = fits.getdata(self.cray_path).astype(int)
 
     def fix_data(self,):
         self.data_fix0 = (self.data_raw - self.bias - self.dark) / self.flat
@@ -140,13 +122,14 @@ class InstrumentEffectCorrection:
         data = self.data_fix0.copy()
         data[self.data_fix0 < 0] = 0
         weight = 1 / (
-            self.image_header[self.GAIN] * data + self.image_header[self.RDNOISE] ** 2
+            self.image_header[self.GAIN] * data +
+            self.image_header[self.RDNOISE] ** 2
         )
         weight[self.flag > 0] = 0
         self.weight = weight
 
     def save(self):
-        data_filename = self.json["file_data_fullname"]
+        data_filename = self.data_path
         data_basename = os.path.basename(data_filename).replace("raw", "img")
         data_output = os.path.join(self.output, data_basename)
         data_fits = fits.HDUList(
@@ -160,6 +143,7 @@ class InstrumentEffectCorrection:
             ]
         )
         data_fits.writeto(data_output)
+        self.data_output = data_output
 
         flag_output = data_output.replace("img", "flg")
         flag_fits = fits.HDUList(
@@ -171,6 +155,7 @@ class InstrumentEffectCorrection:
             ]
         )
         flag_fits.writeto(flag_output)
+        self.flag_output = flag_output
 
         weight_output = data_output.replace("img", "wht")
         weight_fits = fits.HDUList(
@@ -182,6 +167,7 @@ class InstrumentEffectCorrection:
             ]
         )
         weight_fits.writeto(weight_output)
+        self.weight_output = weight_output
 
         header_name = data_basename.replace('.fits', '.head')
         header_output = os.path.join(self.output, header_name)
@@ -196,22 +182,28 @@ class InstrumentEffectCorrection:
             ]
         )
         header_fits.writeto(header_output)
+        self.header_output = header_output
 
-def main():
-    args = argparse.ArgumentParser()
-    args.add_argument('-i', '--id', required=True)
-    args = args.parse_args()
-    obj = InstrumentEffectCorrection(id=args.id)
-    obj.set_data()
-    obj.set_cray()
-    obj.set_bias()
-    obj.set_dark()
-    obj.set_flat()
-    obj.fix_data()
-    obj.set_flag()
-    obj.set_weight()
-    obj.save()
-
+    def run(self):
+        self.set_data()
+        self.set_cray()
+        self.set_bias()
+        self.set_dark()
+        self.set_flat()
+        self.fix_data()
+        self.set_flag()
+        self.set_weight()
+        self.save()
 
 if __name__ == "__main__":
-    main()
+    iec = InstrumentEffectCorrection(
+        data_path="/home/csstpipeline/data/L0/MSC_MS_210525121500_100000001_08_raw.fits",
+        bias_path=[
+            "/home/csstpipeline/data/bkg/MSC_CLB_210525120000_100000000_08_raw.fits"],
+        dark_path=[
+            "/home/csstpipeline/data/bkg/MSC_CLD_210525121000_100000000_08_raw.fits"],
+        flat_path=[
+            "/home/csstpipeline/data/bkg/MSC_CLF_210525120500_100000000_08_raw.fits"],
+        output_path="/home/csstpipeline/data/L05_test/",
+    )
+

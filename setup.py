@@ -8,7 +8,7 @@ setup(
     packages=['csst_msc_instrument_effect'],
     entry_points={
         'console_scripts': [
-            'csst_msc_instrument_effect=csst_msc_instrument_effect.msc_iec:main'
+            'csst-msc-iec=csst_msc_instrument_effect.msc_iec:main'
         ]
     }
 )

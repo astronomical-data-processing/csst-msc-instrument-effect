@@ -106,7 +106,8 @@ class InstrumentEffectCorrection:
         del flg
         del med
         # 00010000:   宇宙线像元    宇宙线污染的像元
-        crobj = CRMask(self.data_fix0)
+        self.config_path = "/home/csstpipeline/csst-msc-instrument-effect-master/MSC_crmask.ini"
+        crobj = CRMask(self.data_fix0, config_path=self.config_path)
         flag_fits, data_fits = crobj.cr_mask()
         flag = flag | (flag_fits[1].data * 16)
         # 00100000:   卫星或者人造移动天体轨迹污染的像元.

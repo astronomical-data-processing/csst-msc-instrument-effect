@@ -15,6 +15,7 @@ calApi = CalMergeApi()
 l0_id = sys.argv[1]
 
 rec = l0Api.get(level0_id=l0_id)
+print(rec)
 print("Find Level0 Data :" + rec.data.file_path)
 
 bias_rec = calApi.get_latest_by_l0(level0_id=l0_id, ref_type="bias")
@@ -37,7 +38,7 @@ iec = InstrumentEffectCorrection(
 )
 iec.run()
 
-params_file_path = "/home/csstpipeline/csst-msc-instrument-effect-master/MSC_crmask.ini"
+params_file_path = iec.config_path
 result_file_path = ', '.join([
     iec.data_output,
     iec.flag_output,

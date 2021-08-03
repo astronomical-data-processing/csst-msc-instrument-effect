@@ -17,7 +17,7 @@ class InstrumentEffectCorrection:
         self.bias_path = bias_path
         self.dark_path = dark_path
         self.flat_path = flat_path
-        self.cray_path = "/home/csstpipeline/data/bkg/MSC_CRD_210525121000_100000000_08_raw.fits"
+        self.cray_path = cray_path
         self.output = output_path
         # RDNOISE
         self.RDNOISE = "RDNOISE1"
@@ -81,7 +81,9 @@ class InstrumentEffectCorrection:
         self.cray = fits.getdata(self.cray_path).astype(int)
 
     def fix_data(self,):
-        self.data_fix0 = (self.data_raw - self.bias - self.dark) / self.flat
+        self.data_fix0 = np.divide(self.data_raw - self.bias - self.dark, self.flat,
+                            out=np.zeros_like(self.data_raw, float), 
+                            where=(self.flat != 0))
 
     def set_flag(self,):
         flag = np.zeros_like(self.data_raw, dtype=np.uint16)
@@ -106,7 +108,7 @@ class InstrumentEffectCorrection:
         del flg
         del med
         # 00010000:   宇宙线像元    宇宙线污染的像元
-        self.config_path = "/home/csstpipeline/csst-msc-instrument-effect-master/MSC_crmask.ini"
+        self.config_path = "/home/csstpipeline/code/csst-msc-instrument-effect/MSC_crmask.ini"
         crobj = CRMask(self.data_fix0, config_path=self.config_path)
         flag_fits, data_fits = crobj.cr_mask()
         flag = flag | (flag_fits[1].data * 16)
@@ -196,15 +198,5 @@ class InstrumentEffectCorrection:
         self.set_weight()
         self.save()
 
-if __name__ == "__main__":
-    iec = InstrumentEffectCorrection(
-        data_path="/home/csstpipeline/data/L0/MSC_MS_210525121500_100000001_08_raw.fits",
-        bias_path=[
-            "/home/csstpipeline/data/bkg/MSC_CLB_210525120000_100000000_08_raw.fits"],
-        dark_path=[
-            "/home/csstpipeline/data/bkg/MSC_CLD_210525121000_100000000_08_raw.fits"],
-        flat_path=[
-            "/home/csstpipeline/data/bkg/MSC_CLF_210525120500_100000000_08_raw.fits"],
-        output_path="/home/csstpipeline/data/L05_test/",
-    )
+
 

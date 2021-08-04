@@ -7,18 +7,17 @@ import numpy as np
 from astropy.io import fits
 
 from csst_msc_instrument_effect.msc_crmask import CRMask
-from csst_dfs_api.facility.level0 import Level0DataApi
-from csst_dfs_api.facility.level0prc import Level0PrcApi
 
 
 class InstrumentEffectCorrection:
-    def __init__(self, data_path, bias_path, dark_path, flat_path, output_path, cray_path) -> None:
+    def __init__(self, data_path, bias_path, dark_path, flat_path, output_path, config_path, cray_path) -> None:
         self.data_path = data_path
         self.bias_path = bias_path
         self.dark_path = dark_path
         self.flat_path = flat_path
         self.cray_path = cray_path
         self.output = output_path
+        self.config_path = config_path
         # RDNOISE
         self.RDNOISE = "RDNOISE1"
         # GAIN
@@ -108,7 +107,6 @@ class InstrumentEffectCorrection:
         del flg
         del med
         # 00010000:   宇宙线像元    宇宙线污染的像元
-        self.config_path = "/home/csstpipeline/csst-msc-instrument-effect/MSC_crmask.ini"
         crobj = CRMask(self.data_fix0, config_path=self.config_path)
         flag_fits, data_fits = crobj.cr_mask()
         flag = flag | (flag_fits[1].data * 16)

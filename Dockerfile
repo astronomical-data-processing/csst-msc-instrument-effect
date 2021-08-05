@@ -4,7 +4,7 @@ RUN pip install --no-deps ccdproc && pip install deepCR
 
 RUN apt-get update && apt-get install -y vim
 
-RUN mkdir -p /home/csstpipeline/code/csst-msc-instrument-effect/csst_msc_instrument_effect
+# RUN mkdir -p /home/csstpipeline/code/csst-msc-instrument-effect/csst_msc_instrument_effect
 # COPY run.sh /app/bin/
 COPY instrument_effect_wrapper.py setup.py requirements.txt \ 
     /home/csstpipeline/code/csst-msc-instrument-effect/
@@ -12,7 +12,7 @@ COPY instrument_effect_wrapper.py setup.py requirements.txt \
 COPY csst_msc_instrument_effect/* \ 
     /home/csstpipeline/code/csst-msc-instrument-effect/csst_msc_instrument_effect/
 
-COPY MSC_crmask.ini /home/csstpipeline/csst-msc-instrument-effect-master/
+COPY MSC_crmask.ini /home/csstpipeline/msc-instrument-effect/
 
 RUN cd /home/csstpipeline/code/csst-msc-instrument-effect/ \
     && python setup.py install

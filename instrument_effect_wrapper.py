@@ -34,7 +34,7 @@ iec = InstrumentEffectCorrection(
     dark_path=dark_rec.data.file_path,
     flat_path=flat_rec.data.file_path,
     output_path="/home/csstpipeline/data/L05_test/",
-    config_path="/home/csstpipeline/msc-instrument-effect/MSC_crmask.ini",
+    config_path="/home/csstpipeline/csst-msc-instrument-effect-master/MSC_crmask.ini",
     cray_path=cray_rec.data.file_path,  # temp
 )
 iec.run()

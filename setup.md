@@ -21,3 +21,4 @@ run.sh 10000000106
 - 临时文件与最终文件也分目录存放
 
 ### github推送
+ALL_PROXY=socks5://127.0.0.1:1080 git push origin main:main

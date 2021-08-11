@@ -133,15 +133,15 @@ class InstrumentEffectCorrection:
         data_filename = self.data_path
         data_basename = os.path.basename(data_filename).replace("raw", "img")
         data_output = os.path.join(self.output, data_basename)
-        data_header = self.primary_header.copy()
+        data_header = self.image_header.copy()
         data_header['EXTNAME'] = 'img'
         data_fits = fits.HDUList(
             [
-                fits.PrimaryHDU(header=data_header),
+                fits.PrimaryHDU(header=self.primary_header),
                 fits.ImageHDU(
                     data=self.data_fix0.astype(np.float32)
                     / self.primary_header[self.EXPTIME],
-                    header=self.image_header,
+                    header=data_header,
                 ),
             ]
         )
@@ -149,13 +149,13 @@ class InstrumentEffectCorrection:
         self.data_output = data_output
 
         flag_output = data_output.replace("img", "flg")
-        flag_header = self.primary_header.copy()
+        flag_header = self.image_header.copy()
         flag_header['EXTNAME'] = 'flg'
         flag_fits = fits.HDUList(
             [
-                fits.PrimaryHDU(header=flag_header),
+                fits.PrimaryHDU(header=self.primary_header),
                 fits.ImageHDU(
-                    data=self.flag.astype(np.uint16), header=self.image_header
+                    data=self.flag.astype(np.uint16), header=flag_header
                 ),
             ]
         )
@@ -163,13 +163,13 @@ class InstrumentEffectCorrection:
         self.flag_output = flag_output
 
         weight_output = data_output.replace("img", "wht")
-        weight_header = self.primary_header.copy()
+        weight_header = self.image_header.copy()
         weight_header['EXTNAME'] = 'wht'
         weight_fits = fits.HDUList(
             [
-                fits.PrimaryHDU(header=weight_header),
+                fits.PrimaryHDU(header=self.primary_header),
                 fits.ImageHDU(
-                    data=self.weight.astype(np.float32), header=self.image_header
+                    data=self.weight.astype(np.float32), header=weight_header
                 ),
             ]
         )

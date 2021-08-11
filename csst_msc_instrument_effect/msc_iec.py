@@ -131,11 +131,13 @@ class InstrumentEffectCorrection:
 
     def save(self):
         data_filename = self.data_path
-        data_basename = os.path.basename(data_filename).replace(".fits", ".img")
+        data_basename = os.path.basename(data_filename).replace("raw", "img")
         data_output = os.path.join(self.output, data_basename)
+        data_header = self.primary_header.copy()
+        data_header['EXTNAME'] = 'img'
         data_fits = fits.HDUList(
             [
-                fits.PrimaryHDU(header=self.primary_header),
+                fits.PrimaryHDU(header=data_header),
                 fits.ImageHDU(
                     data=self.data_fix0.astype(np.float32)
                     / self.primary_header[self.EXPTIME],
@@ -146,10 +148,12 @@ class InstrumentEffectCorrection:
         data_fits.writeto(data_output)
         self.data_output = data_output
 
-        flag_output = data_output.replace(".fits", ".flg")
+        flag_output = data_output.replace("img", "flg")
+        flag_header = self.primary_header.copy()
+        flag_header['EXTNAME'] = 'flg'
         flag_fits = fits.HDUList(
             [
-                fits.PrimaryHDU(header=self.primary_header),
+                fits.PrimaryHDU(header=flag_header),
                 fits.ImageHDU(
                     data=self.flag.astype(np.uint16), header=self.image_header
                 ),
@@ -158,10 +162,12 @@ class InstrumentEffectCorrection:
         flag_fits.writeto(flag_output)
         self.flag_output = flag_output
 
-        weight_output = data_output.replace(".fits", ".wht")
+        weight_output = data_output.replace("img", "wht")
+        weight_header = self.primary_header.copy()
+        weight_header['EXTNAME'] = 'wht'
         weight_fits = fits.HDUList(
             [
-                fits.PrimaryHDU(header=self.primary_header),
+                fits.PrimaryHDU(header=weight_header),
                 fits.ImageHDU(
                     data=self.weight.astype(np.float32), header=self.image_header
                 ),

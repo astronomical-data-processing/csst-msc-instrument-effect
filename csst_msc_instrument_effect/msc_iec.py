@@ -131,7 +131,7 @@ class InstrumentEffectCorrection:
 
     def save(self):
         data_filename = self.data_path
-        data_basename = os.path.basename(data_filename).replace("raw", "img")
+        data_basename = os.path.basename(data_filename).replace(".fits", ".img")
         data_output = os.path.join(self.output, data_basename)
         data_fits = fits.HDUList(
             [
@@ -146,7 +146,7 @@ class InstrumentEffectCorrection:
         data_fits.writeto(data_output)
         self.data_output = data_output
 
-        flag_output = data_output.replace("img", "flg")
+        flag_output = data_output.replace(".fits", ".flg")
         flag_fits = fits.HDUList(
             [
                 fits.PrimaryHDU(header=self.primary_header),
@@ -158,7 +158,7 @@ class InstrumentEffectCorrection:
         flag_fits.writeto(flag_output)
         self.flag_output = flag_output
 
-        weight_output = data_output.replace("img", "wht")
+        weight_output = data_output.replace(".fits", ".wht")
         weight_fits = fits.HDUList(
             [
                 fits.PrimaryHDU(header=self.primary_header),

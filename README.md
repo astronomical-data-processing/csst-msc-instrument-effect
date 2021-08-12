@@ -7,3 +7,20 @@
 ```bash
 sh csst_msc_iec.sh [id]
 ```
+
+## 使用python运行
+```python
+from csst_msc_instrument_effect.msc_iec import InstrumentEffectCorrection
+
+
+iec = InstrumentEffectCorrection(
+    data_path=data_filename,
+    bias_path=bias_filename,
+    dark_path=dark_filename,
+    flat_path=flat_filename,
+    cray_path=cray_filename,
+    output_path=output_path,
+    config_path=config_path,
+)
+iec.run()
+```

@@ -135,6 +135,8 @@ class InstrumentEffectCorrection:
         data_output = os.path.join(self.output, data_basename)
         data_header = self.image_header.copy()
         data_header['EXTNAME'] = 'img'
+        data_header[self.GAIN] = data_header[self.GAIN] * self.primary_header[self.EXPTIME]
+        data_header['BUNIT'] = 'e/s'
         data_fits = fits.HDUList(
             [
                 fits.PrimaryHDU(header=self.primary_header),

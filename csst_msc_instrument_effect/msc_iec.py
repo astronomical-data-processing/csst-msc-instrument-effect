@@ -147,7 +147,7 @@ class InstrumentEffectCorrection:
                 ),
             ]
         )
-        data_fits.writeto(data_output)
+        data_fits.writeto(data_output, overwrite=True)
         self.data_output = data_output
 
         flag_output = data_output.replace("img", "flg")
@@ -161,7 +161,7 @@ class InstrumentEffectCorrection:
                 ),
             ]
         )
-        flag_fits.writeto(flag_output)
+        flag_fits.writeto(flag_output, overwrite=True)
         self.flag_output = flag_output
 
         weight_output = data_output.replace("img", "wht")
@@ -175,7 +175,7 @@ class InstrumentEffectCorrection:
                 ),
             ]
         )
-        weight_fits.writeto(weight_output)
+        weight_fits.writeto(weight_output, overwrite=True)
         self.weight_output = weight_output
 
         header_name = data_basename.replace('.fits', '.head')
@@ -190,7 +190,7 @@ class InstrumentEffectCorrection:
                 fits.PrimaryHDU(header=hu)
             ]
         )
-        header_fits.writeto(header_output)
+        header_fits.writeto(header_output, overwrite=True)
         self.header_output = header_output
 
     def run(self):

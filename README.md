@@ -14,13 +14,14 @@ from csst_msc_instrument_effect.msc_iec import InstrumentEffectCorrection
 
 
 iec = InstrumentEffectCorrection(
-    data_path=data_filename,
-    bias_path=bias_filename,
-    dark_path=dark_filename,
-    flat_path=flat_filename,
-    cray_path=cray_filename,
-    output_path=output_path,
-    config_path=config_path,
+    data_path=data_filename,    # 科学图fits文件路径
+    bias_path=bias_filename,    # 本底fits文件路径(可以是路径列表)
+    dark_path=dark_filename,    # 暗场fits文件路径(可以是路径列表)
+    flat_path=flat_filename,    # 平场fits文件路径(可以是路径列表)
+    cray_path=cray_filename,    # 模拟宇宙线文件路径(因为模拟数据的问题, 暂时添加, 之后会去除)
+    output_path=output_path,    # 输出路径
+    config_path=config_path,    # crmask配置文件路径, 指的就是MSC_crmask.ini
 )
 iec.run()
 ```
+生成的文件会有img, flag, weight, header四个

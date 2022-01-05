@@ -1,4 +1,4 @@
-IMAGE=hub.cstcloud.cn/csst/detector-effect-correction
+IMAGE=hub.cstcloud.cn/csst/detector-effect-correction:dev
 
 build:
 	docker build --network=host -t $(IMAGE) .

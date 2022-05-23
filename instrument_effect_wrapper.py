@@ -29,13 +29,13 @@ print("Find Level0 Flat :" + flat_rec.data.file_path)
 # ------------------------------------------------------
 # to-do data processing here
 iec = InstrumentEffectCorrection(
-    data_path=rec.data.file_path,
-    bias_path=bias_rec.data.file_path,
-    dark_path=dark_rec.data.file_path,
-    flat_path=flat_rec.data.file_path,
+    data_input=rec.data.file_path,
+    bias_input=bias_rec.data.file_path,
+    dark_input=dark_rec.data.file_path,
+    flat_input=flat_rec.data.file_path,
     output_path="/home/csstpipeline/data/L05_test/",
     config_path="/home/csstpipeline/csst-msc-instrument-effect-master/MSC_crmask.ini",
-    cray_path=cray_rec.data.file_path,  # temp
+    cray_input=cray_rec.data.file_path,  # temp
 )
 iec.run()
 

@@ -12,19 +12,19 @@ from csst_msc_instrument_effect.msc_crmask import CRMask
 class InstrumentEffectCorrection:
     def __init__(
         self,
-        data_path,
-        bias_path,
-        dark_path,
-        flat_path,
+        data_input,
+        bias_input,
+        dark_input,
+        flat_input,
         output_path,
         config_path,
-        cray_path,
+        cray_input=None,
     ) -> None:
-        self.data_path = data_path
-        self.bias_path = bias_path
-        self.dark_path = dark_path
-        self.flat_path = flat_path
-        self.cray_path = cray_path
+        self.data_input = data_input
+        self.bias_input = bias_input
+        self.dark_input = dark_input
+        self.flat_input = flat_input
+        self.cray_input = cray_input
         self.output = output_path
         self.config_path = config_path
         # RDNOISE
@@ -33,10 +33,13 @@ class InstrumentEffectCorrection:
         self.GAIN = "GAIN1"
         # EXPTIME
         self.EXPTIME = "EXPTIME"
+        # output
+        if not os.path.exists(self.output):
+            os.mkdir(self.output)
 
     def set_data(self):
         # data
-        with fits.open(self.data_path) as hdul:
+        with fits.open(self.data_input) as hdul:
             self.primary_header = hdul[0].header
             self.data_raw = hdul[1].data.astype(int)
             self.image_header = hdul[1].header
@@ -47,13 +50,15 @@ class InstrumentEffectCorrection:
             du = fits.getdata(path)
             return du.astype(int)
 
-        if isinstance(self.bias_path, list) and len(self.bias_path) != 1:
-            bias = np.array([*map(func, self.bias_path)])
+        if isinstance(self.bias_input, list) and len(self.bias_input) != 1:
+            bias = np.array([*map(func, self.bias_input)])
             self.bias, var = array_combine(bias, mode)
-        elif isinstance(self.bias_path, list) and len(self.bias_path) == 1:
-            self.bias = func(self.bias_path[0])
+        elif isinstance(self.bias_input, list) and len(self.bias_input) == 1:
+            self.bias = func(self.bias_input[0])
+        elif isinstance(self.bias_input, np.ndarray) and len(self.bias_input.shape) == 2:
+            self.bias = self.bias_input
         else:
-            self.bias = func(self.bias_path)
+            self.bias = func(self.bias_input)
 
     def set_dark(self, mode):
         # dark
@@ -64,15 +69,17 @@ class InstrumentEffectCorrection:
             du = du.astype(int)
             du = du - self.bias
             du = du - self.cray / self.image_header[self.GAIN]  # tmp
-            return du / hu[self.EXPTIME] * self.primary_header[self.EXPTIME]
+            return du / hu[self.EXPTIME]
 
-        if isinstance(self.dark_path, list) and len(self.dark_path) != 1:
-            dark = np.array([*map(func, self.dark_path)])
+        if isinstance(self.dark_input, list) and len(self.dark_input) != 1:
+            dark = np.array([*map(func, self.dark_input)])
             self.dark, var = array_combine(dark, mode)
-        elif isinstance(self.dark_path, list) and len(self.dark_path) == 1:
-            self.dark = func(self.dark_path[0])
+        elif isinstance(self.dark_input, list) and len(self.dark_input) == 1:
+            self.dark = func(self.dark_input[0])
+        elif isinstance(self.dark_input, np.ndarray) and len(self.dark_input.shape) == 2:
+            self.dark = self.dark_input
         else:
-            self.dark = func(self.dark_path)
+            self.dark = func(self.dark_input)
 
     def set_flat(self, mode):
         # flat
@@ -82,25 +89,30 @@ class InstrumentEffectCorrection:
                 hu = hdul[0].header
             du = du.astype(int)
             du = du - self.bias
-            du = du / hu[self.EXPTIME] * self.primary_header[self.EXPTIME]
+            du = du / hu[self.EXPTIME]
             du = du - self.dark
             return du / np.median(du)
 
-        if isinstance(self.flat_path, list) and len(self.flat_path) != 1:
-            flat = np.array([*map(func, self.flat_path)])
+        if isinstance(self.flat_input, list) and len(self.flat_input) != 1:
+            flat = np.array([*map(func, self.flat_input)])
             self.flat, var = array_combine(flat, mode)
-        elif isinstance(self.flat_path, list) and len(self.flat_path) == 1:
-            self.flat = func(self.flat_path[0])
+        elif isinstance(self.flat_input, list) and len(self.flat_input) == 1:
+            self.flat = func(self.flat_input[0])
+        elif isinstance(self.flat_input, np.ndarray) and len(self.flat_input.shape) == 2:
+            self.flat = self.flat_input
         else:
-            self.flat = func(self.flat_path)
+            self.flat = func(self.flat_input)
 
     def set_cray(self):
         # cray
-        self.cray = fits.getdata(self.cray_path).astype(int)
+        if not self.cray_input == None:
+            self.cray = fits.getdata(self.cray_input).astype(int)
+        else:
+            self.cray = 0
 
     def fix_data(self,):
         self.data_fix0 = np.divide(
-            self.data_raw - self.bias - self.dark,
+            self.data_raw - self.bias - self.dark * self.primary_header[self.EXPTIME],
             self.flat,
             out=np.zeros_like(self.data_raw, float),
             where=(self.flat != 0),
@@ -115,7 +127,7 @@ class InstrumentEffectCorrection:
         flag = flag | (flg * 1)
         # 00000010:   热像元
         # 因为探测器本身原因造成的影响科学研究结果的像元. 像元在150秒积分时间内, 暗流计数大于探测器平均读出噪声的平方.
-        dark = self.dark.copy()
+        dark = self.dark.copy() * self.primary_header[self.EXPTIME]
         dark[dark < 0] = 0
         flg = 1 * self.image_header[self.RDNOISE] ** 2 <= dark  # 不确定是否包含 暂定包含
         flag = flag | (flg * 2)
@@ -146,15 +158,16 @@ class InstrumentEffectCorrection:
     def set_weight(self):
         data = self.data_fix0.copy()
         data[self.data_fix0 < 0] = 0
-        weight = 1 / (
-            self.image_header[self.GAIN] * data + self.image_header[self.RDNOISE] ** 2
-        )
+        weight_raw = 1. / (self.image_header[self.GAIN] * data + self.image_header[self.RDNOISE] ** 2)
+        bias_weight = np.std(self.bias)
+        weight = 1. / (1. / weight_raw + 1. / bias_weight) * (self.primary_header[self.EXPTIME] ** 2)
         weight[self.flag > 0] = 0
         self.weight = weight
 
     def save(self):
-        data_filename = self.data_path
-        data_basename = os.path.basename(data_filename).replace("raw", "img")
+        data_filename = self.data_input
+        data_basename0 = os.path.basename(data_filename).replace("L0", "L1")
+        data_basename = os.path.basename(data_basename0).replace(".fits", "_img.fits")
         data_output = os.path.join(self.output, data_basename)
         data_header = self.image_header.copy()
         data_header["EXTNAME"] = "img"
@@ -211,6 +224,16 @@ class InstrumentEffectCorrection:
         header_fits = fits.HDUList([fits.PrimaryHDU(header=hu)])
         header_fits.writeto(header_output, overwrite=True)
         self.header_output = header_output
+
+        # bias_output = data_output.replace("img", "bias")
+        # bias_fits = fits.HDUList([fits.PrimaryHDU(data=self.bias)])
+        # bias_fits.writeto(bias_output, overwrite=True)
+        # dark_output = data_output.replace("img", "dark")
+        # dark_fits = fits.HDUList([fits.PrimaryHDU(data=self.dark)])
+        # dark_fits.writeto(dark_output, overwrite=True)
+        # flat_output = data_output.replace("img", "flat")
+        # flat_fits = fits.HDUList([fits.PrimaryHDU(data=self.flat)])
+        # flat_fits.writeto(flat_output, overwrite=True)
 
     def run(self):
         self.set_data()

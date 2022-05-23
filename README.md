@@ -28,7 +28,7 @@ iec.run()
 
 ## 使用BKGscript.py
 
-运行BKGscript.py 更改main函数内input_path与save_path与number_list两个变量
+运行BKGscript.py 更改main函数内input_path与save_path与number_list三个变量
 input_path为参考源文件路径
 save_path为输出路径
 number_list为需要进行合并的参考文件编号

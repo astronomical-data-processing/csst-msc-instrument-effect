@@ -22,6 +22,7 @@ import ccdproc
 
 from deepCR import deepCR
 from deepCR import train
+import torch
 
 import datetime
 import sys
@@ -170,6 +171,9 @@ class CRMask:
             if config.has_option('global', 'model'):
                 self.model = config.get('global', 'model')
 
+            if config.has_option('global', 'torch_thread'):
+                self.torch_thread = config.get('global', 'torch_thread')
+                torch.set_num_threads(self.torch_thread)
             self.config = config
 
     def cr_mask_lacosmic(self):
@@ -357,9 +361,9 @@ class CRMask:
             n_jobs = -1
 
         if self.gpu_flag:
-            model = deepCR(clean_model, inpaint_model, device = 'GPU')
+            model = deepCR(clean_model, inpaint_model, device = 'GPU', hidden=50)
         else:
-            model = deepCR(clean_model, inpaint_model, device = 'CPU')
+            model = deepCR(clean_model, inpaint_model, device = 'CPU', hidden=50)
         
         data = self.hdulist[1].data
 
@@ -571,7 +575,7 @@ class CRMask:
             hidden = config.getint('deepCR', 'hidden')
         else:
             hidden = 50
-
+            
         if  config.has_option('deepCR', 'epoch'):
             epoch = config.getint('deepCR', 'epoch')
         else:

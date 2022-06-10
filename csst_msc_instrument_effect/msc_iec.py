@@ -5,6 +5,8 @@ from datetime import datetime
 
 import numpy as np
 from astropy.io import fits
+from deepCR import deepCR
+import torch
 
 from csst_msc_instrument_effect.msc_crmask import CRMask
 
@@ -145,7 +147,8 @@ class InstrumentEffectCorrection:
         # 宇宙线污染的像元
         crobj = CRMask(self.data_fix0, config_path=self.config_path)
         flag_fits, data_fits = crobj.cr_mask()
-        flag = flag | (flag_fits[1].data * 16)
+        flag_fits = flag_fits[1].data.astype(np.uint16)
+        flag = flag | (flag_fits * 16)
         # 00100000:   卫星或者人造移动天体轨迹污染的像元.
         pass
         # 01000000:   鬼像污染的像元.
